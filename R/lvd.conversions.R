@@ -100,18 +100,6 @@ hardness <- function(x, area, unit.area = "mm2", unit.load = "N", crop = FALSE, 
   }
 }
 
-# strength----
-#' @title strength
-#' @description Convert data from an lvd object into strength
-#' @param x An object of class 'lvd'
-#' @return A numeric value for strength
-#' @examples
-#'
-#' @export
-strength <- function() {
- #TO DO
-}
-
 # vickers.area----
 #' @title vickers.area
 #' @description Converts dimensions of indentation marks left by Vicker's test
@@ -181,86 +169,47 @@ young.modulus <- function(x, lng, area, unit.area = "mm2", unit.load = "N", crop
   }
 }
 
-# toughness----
-#' @title toughness
-#' @description Compute the energy per unit volume, or toughness, in J/m3
-#' @param x An object of class 'lvd'
-#' @param area A numeric indicating the initial specimen cross-section area
-#' @param lng A numeric indicating the initial specimen length
-#' @param unit.area The unit in which the cross area was taken. Default is
-#'   square mm ("mm2")
-#' @param unit.load The unit in which the load was measured. Default is N
-#' @param crop Character string indicating whether the lvd data should be
-#'   cropped automatically ('auto') or manually ('manual').
-#' @param zero.out Logical indicating whether the stress-strain curve should be
-#'   "zero-outed" before the conversion. NOTE : INTRODUIRE UN ALPHA POUR DECIDER
-#'   QUEL POURCENTAGE EXCLURE ENTRE 1% et 5%
-#' @return A numeric value for Young's elasticity modulus
-#' @examples
-#'
-#' @export
-toughness <- function(x, lng, area, crop = "auto", unit.area = "mm2", unit.load = "N", zero.out = FALSE, alpha = 0.05) {
-
-  if (class(x)[1] == "lvd") {
-    if(crop == "auto") {
-      x <- lvd.crop(x, method = "before.max")
-    }
-    else if(crop == "manual") {
-      x <- lvd.crop(x, method = "manual")
-    }
-    Stress <- x@load/area
-    Strain <- x@displacement/lng
-    if(zero.out) {
-      Stress <- Stress[which(Stress > (max(Stress) * alpha))]
-      Strain <- Strain[which(Stress > (max(Stress) * alpha))]
-    }
-    #Area under curve
-    Auc <- sum(tis::lintegrate(Stress, Strain, xint = Stress))
-    #Conversion?
-    #
-    return(Auc)
-  }
-
-  else {
-    stop("x should be a numeric vector, or an object of class 'lvd'")
-  }
-}
-
-
 #  energy release rate----
-#' @title energy.release.rate
+#' @title energy.rate
 #' @description Compute the energy release rate in J/m2
 #' @param x An object of class 'lvd' for the first pass (= with specimen)
 #' @param y An object of class 'lvd' for the second pass (= empty)
 #' @param blade A character string indicating the type of blade used for the
-#'   test (wedge or scissors)
+#'   test ('wedge' or 'scissors'). Default is 'wedge.'
 #' @param width For the wedge test, a numeric indicating the width of the specimen
+#' @param depth For the wedge test, a numeric indicating the depth of the fracture
 #' @param unit.area The unit in which the cross area was taken. Default is
 #'   square mm ("mm2")
 #' @param unit.load The unit in which the load was measured. Default is N
 #' @param crop Character string indicating whether the lvd data should be
-#'   cropped automatically ('auto') or manually ('manual').
-#' @return A numeric value for Young's elasticity modulus
+#'   cropped automatically ('auto') or manually ('manual'). Default is 'auto', which crops after the maximum was reached.
+#' @return A numeric value for the specimen's energy release rate G
 #' @examples
 #'
 #' @export
-release.rate <- function(x, y, blade = "wedge", width, crop = "auto", unit.area = "mm2", unit.load = "N") {
+energy.rate <- function(x, y, blade = "wedge", width, depth, crop = "auto", unit.area = "mm2", unit.load = "N") {
 
   if (class(x)[1] == "lvd") {
     if(crop == "auto") {
-      x <- lvd.crop(x, method = "before.max")
+      x <- lvd.crop(x, method = "after.max")
+      y <- lvd.crop(y, method = "after.max")
     }
     else if(crop == "manual") {
       x <- lvd.crop(x, method = "manual")
+      y <- lvd.crop(y, method = "manual")
     }
-    Load <- x@load
-    Displacement <- x@displacement
 
     #Area under curve
-    Auc <- sum(tis::lintegrate(Stress, Strain, xint = Stress))
+    Load <- x@load
+    Displacement <- x@displacement
+    Auc <- sum(tis::lintegrate(Load, Displacement, xint = Load))
+    #Remove 2nd pass
+    Load <- y@load
+    Displacement <- y@displacement
+    Auc <- Auc - sum(tis::lintegrate(Load, Displacement, xint = Load))
 
     if (blade == "wedge"){
-      Errate <- Auc / width
+      G <- Auc / (width * depth)
     }
     else if (blade == "scissors"){
       warning("Sorry, 'scissors' are still work in progress")
@@ -270,9 +219,18 @@ release.rate <- function(x, y, blade = "wedge", width, crop = "auto", unit.area 
       warning("Blade argument should be of type 'wedge' or 'scissors'")
       return()
     }
-    #Conversion?
-    #
-    return(Errate)
+
+    #Conversion
+    if (unit.load == "N") {L = 1}
+    if (unit.load == "mN") {L = 0.001}
+    if (unit.load == "kgf") {L = 1/9.80665}
+    if (unit.area == "mm2") {A = 1}
+    if (unit.area == "cm2") {A = 100}
+    if (unit.area == "m2") {A = 1000000}
+    K <- L / A
+    G <- G / K
+
+    return(G)
   }
 
   else {

@@ -224,9 +224,9 @@ energy.rate <- function(x, y, blade = "wedge", width, depth, crop = "auto", unit
     if (unit.load == "N") {L = 1}
     if (unit.load == "mN") {L = 0.001}
     if (unit.load == "kgf") {L = 1/9.80665}
-    if (unit.area == "mm2") {A = 1}
-    if (unit.area == "cm2") {A = 100}
-    if (unit.area == "m2") {A = 1000000}
+    if (unit.area == "mm2") {A = 0.000001}
+    if (unit.area == "cm2") {A = 0.0001}
+    if (unit.area == "m2") {A = 1}
     K <- L / A
     G <- G / K
 

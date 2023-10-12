@@ -191,12 +191,27 @@ energy.rate <- function(x, y, blade = "wedge", width, depth, crop = "auto", unit
 
   if (class(x)[1] == "lvd") {
     if(crop == "auto") {
-      x <- lvd.crop(x, method = "after.max")
-      y <- lvd.crop(y, method = "after.max")
+
+      indexMaxLoad <- which(x@load == max(x@load))
+      x@load <- x@load[indexMaxLoad:length(x@load)]
+      x@displacement <- x@displacement[indexMaxLoad:length(x@load)]
+      x@time <- x@time[indexMaxLoad:length(x@load)]
+      y@load <- y@load[indexMaxLoad:length(x@load)]
+      y@displacement <- y@displacement[indexMaxLoad:length(x@load)]
+      y@time <- y@time[indexMaxLoad:length(x@load)]
+      #then get the min of the cropped data and crop to the left of the lvd graph:
+      indexMinLoad <- which(x@load == min(x@load))
+      x@load <- x@load[1:indexMinLoad]
+      x@displacement <- x@displacement[1:indexMinLoad]
+      x@time <- x@time[1:indexMinLoad]
+      y@load <- y@load[1:indexMinLoad]
+      y@displacement <- y@displacement[1:indexMinLoad]
+      y@time <- y@time[1:indexMinLoad]
+
+
     }
     else if(crop == "manual") {
-      x <- lvd.crop(x, method = "manual")
-      y <- lvd.crop(y, method = "manual")
+      warning("Sorry, 'manual' crop is still work in progress")
     }
 
     #Area under curve

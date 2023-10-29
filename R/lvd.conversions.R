@@ -55,7 +55,7 @@ lvd.to.stress <- function(x, area, unit = "mm2") {
 
 # hardness----
 #' @title hardness
-#' @description Compute Young's modulus from an lvd object
+#' @description Compute Vicker's hardness from an lvd object
 #' @param x An object of class 'lvd'
 #' @param area A numeric indicating the area of the deformation
 #' @param unit.area The unit in which the cross area was taken. Default is
@@ -79,19 +79,21 @@ hardness <- function(x, area, unit.area = "mm2", unit.load = "N", crop = FALSE, 
     if(zero.out == TRUE) {
      Load <- Load[which(Load > (max(Load)*alpha))]
     }
-    # Hardness
-    Hardness <- max(Load)/area
     # Conversion
     # Si cross-area en mm2 et stress en N, cela nous donne des N/mm2, soit des MPa
     # Facteur de conversion à calculer en fonction des unités
-    if (unit.load == "N") {L = 1}
-    if (unit.load == "mN") {L = 0.001}
-    if (unit.load == "kgf") {L = 1/9.80665}
+    if (unit.load == "N") {L = 9.80665}
+    if (unit.load == "mN") {L = 9.80665 / 1000}
+    if (unit.load == "kgf") {L = 1}
     if (unit.area == "mm2") {A = 1}
     if (unit.area == "cm2") {A = 100}
     if (unit.area == "m2") {A = 1000000}
-    K <- L/A
-    Hardness <- Hardness/K
+
+    Load <- Load / L
+    area <- area * A
+
+    # Hardness
+    Hardness <-  1.854 * max(Load) / area
     return(Hardness)
   }
 
